@@ -1,0 +1,6 @@
+{
+  "name": "StoryBlocks",
+  "description": "StoryBlocks is a professional writing management platform that helps authors outline books, manage chapters, track writing goals, and visualize progress using a unique weighted progress block system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

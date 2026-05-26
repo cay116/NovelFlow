@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "Book": {
+      "title": "Book",
+      "description": "Represents a book or novel being managed by the author.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the book" },
+        "userId": { "type": "string", "description": "UID of the author who owns the book" },
+        "title": { "type": "string", "description": "Title of the book" },
+        "genre": { "type": "string", "description": "Genre (e.g. Fiction, Fantasy, Sci-Fi)" },
+        "description": { "type": "string", "description": "Brief description or logline" },
+        "coverImage": { "type": "string", "description": "URLs or Base64 Encoded cover image" },
+        "plannedChapters": { "type": "integer", "description": "Target number of chapters" },
+        "writingGoal": { "type": "integer", "description": "Target word count for the book" },
+        "status": { "type": "string", "enum": ["Draft", "In Progress", "Completed"] },
+        "progress": { "type": "integer", "description": "Calculated completion percentage" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "genre", "status"]
+    },
+    "Chapter": {
+      "title": "Chapter",
+      "description": "Represents a single chapter belonging to a specific book.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the chapter" },
+        "bookId": { "type": "string", "description": "Associated Book ID" },
+        "userId": { "type": "string", "description": "Owner UID of the chapter" },
+        "title": { "type": "string", "description": "Name or Title of the chapter" },
+        "summary": { "type": "string", "description": "Short chapter sync/outline summary" },
+        "notes": { "type": "string", "description": "Active writing draft or notes of the chapter" },
+        "progress": { "type": "integer", "description": "Completion percentage (0 to 100)" },
+        "blocks": { "type": "integer", "description": "Weighted size blocks: 1 (Small), 2 (Medium), 3 (Large)" },
+        "pageCount": { "type": "integer", "description": "Total pages calculated or entered" },
+        "wordCount": { "type": "integer", "description": "Active word count in notes" },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High"] },
+        "status": { "type": "string", "enum": ["To Do", "In Progress", "In Review", "Completed"] },
+        "references": { "type": "array", "description": "List of reference objects (PDFs, URLs, Files)" },
+        "order": { "type": "integer", "description": "Ordering index for the chapter list" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "bookId", "userId", "title", "progress", "blocks", "order"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Information about the author's writing performance and details.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "User UID" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "writingStreak": { "type": "integer" },
+        "lastWriteDate": { "type": "string" },
+        "badges": { "type": "array" },
+        "dailyLogs": { "type": "object", "description": "Dates with word count changes for analytics" }
+      },
+      "required": ["id", "email"]
+    }
+  },
+  "firestore": {
+    "/books/{bookId}": {
+      "schema": "Book",
+      "description": "Author-owned books collection"
+    },
+    "/chapters/{chapterId}": {
+      "schema": "Chapter",
+      "description": "Chapters associated with books"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User account settings and streaks"
+    }
+  }
+}

@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Global Safety Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 2. Validation Blueprints
+    function isValidBook(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'genre', 'status'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.title is string && data.title.size() <= 200
+        && data.genre is string && data.genre.size() <= 100
+        && data.status is string && (data.status == 'Draft' || data.status == 'In Progress' || data.status == 'Completed')
+        && (!data.keys().contains('description') || data.description is string && data.description.size() <= 5000)
+        && (!data.keys().contains('coverImage') || data.coverImage is string && data.coverImage.size() <= 500000)
+        && (!data.keys().contains('plannedChapters') || data.plannedChapters is int)
+        && (!data.keys().contains('writingGoal') || data.writingGoal is int)
+        && (!data.keys().contains('progress') || data.progress is int)
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidChapter(data) {
+      return data.keys().hasAll(['id', 'bookId', 'userId', 'title', 'progress', 'blocks', 'order'])
+        && data.id is string && data.id.size() <= 128
+        && data.bookId is string && data.bookId.size() <= 128
+        && data.userId is string && data.userId.size() <= 128
+        && data.title is string && data.title.size() <= 200
+        && data.progress is int && data.progress >= 0 && data.progress <= 100
+        && data.blocks is int && data.blocks >= 1 && data.blocks <= 5
+        && data.order is int && data.order >= 0
+        && (!data.keys().contains('summary') || data.summary is string && data.summary.size() <= 5000)
+        && (!data.keys().contains('notes') || data.notes is string && data.notes.size() <= 200000)
+        && (!data.keys().contains('pageCount') || data.pageCount is int)
+        && (!data.keys().contains('wordCount') || data.wordCount is int)
+        && (!data.keys().contains('priority') || data.priority is string && (data.priority == 'Low' || data.priority == 'Medium' || data.priority == 'High'))
+        && (!data.keys().contains('status') || data.status is string && (data.status == 'To Do' || data.status == 'In Progress' || data.status == 'In Review' || data.status == 'Completed'))
+        && (!data.keys().contains('references') || data.references is list)
+        && data.userId == request.auth.uid;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['id', 'email'])
+        && data.id is string && data.id.size() <= 128
+        && data.email is string && data.email.size() <= 200
+        && (!data.keys().contains('displayName') || data.displayName is string && data.displayName.size() <= 200)
+        && (!data.keys().contains('writingStreak') || data.writingStreak is int)
+        && (!data.keys().contains('lastWriteDate') || data.lastWriteDate is string)
+        && (!data.keys().contains('badges') || data.badges is list)
+        && (!data.keys().contains('dailyLogs') || data.dailyLogs is map)
+        && data.id == request.auth.uid;
+    }
+
+    // 4. Secure Collections
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data)
+        && request.resource.data.email == resource.data.email; // Email is immutable
+      allow delete: if false; // Profiles cannot be deleted directly
+    }
+
+    match /books/{bookId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidBook(request.resource.data) && isValidId(bookId);
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid
+        && isValidBook(request.resource.data)
+        && request.resource.data.userId == resource.data.userId; // Immutable Owner
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /chapters/{chapterId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidChapter(request.resource.data) && isValidId(chapterId)
+        // Ensure book belongs to the user
+        && get(/databases/$(database)/documents/books/$(request.resource.data.bookId)).data.userId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid
+        && isValidChapter(request.resource.data)
+        && request.resource.data.userId == resource.data.userId  // Immutable Owner
+        && request.resource.data.bookId == resource.data.bookId; // Immutable Parent Book
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}
