@@ -3,12 +3,32 @@ import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 
+// Vercel / Production Firebase Configuration
+const vercelConfig = {
+  apiKey: "AIzaSyCwCLMarz38NJd1ZZgpCGZ4CHeEDZgVFyM",
+  authDomain: "novelflow-73d1b.firebaseapp.com",
+  projectId: "novelflow-73d1b",
+  storageBucket: "novelflow-73d1b.firebasestorage.app",
+  messagingSenderId: "1014027586810",
+  appId: "1:1014027586810:web:540a7967bbdcaa09cecd43",
+  measurementId: "G-DEXZ78TJWE"
+};
+
+// Detect if running in Vercel environment vs Local Dev environment
+const isVercelEnv = typeof window !== 'undefined' && (
+  window.location.hostname.endsWith('.vercel.app') || 
+  !['localhost', '127.0.0.1', '0.0.0.0'].includes(window.location.hostname)
+);
+
+// Choose config based on host
+const activeConfig = isVercelEnv ? vercelConfig : firebaseConfig;
+
 // Detect placeholder config
 export const isFirebaseConfigured = 
-  firebaseConfig.apiKey && 
-  !firebaseConfig.apiKey.includes('__PLACEHOLDER__') && 
-  firebaseConfig.projectId && 
-  !firebaseConfig.projectId.includes('__PLACEHOLDER__');
+  activeConfig.apiKey && 
+  !activeConfig.apiKey.includes('__PLACEHOLDER__') && 
+  activeConfig.projectId && 
+  !activeConfig.projectId.includes('__PLACEHOLDER__');
 
 let app;
 let db: any = null;
@@ -17,10 +37,16 @@ let googleProvider: any = null;
 
 if (isFirebaseConfigured) {
   try {
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    db = getFirestore(app);
+    app = getApps().length === 0 ? initializeApp(activeConfig) : getApp();
+    const dbId = (activeConfig as any).firestoreDatabaseId;
+    db = dbId ? getFirestore(app, dbId) : getFirestore(app);
     auth = getAuth(app);
     googleProvider = new GoogleAuthProvider();
+    
+    if (typeof window !== 'undefined') {
+      console.log("[Firebase Debug] Current origin is:", window.location.origin);
+      console.log("[Firebase Debug] If you see 'auth/unauthorized-domain', make sure you have added this hostname to your Firebase Auth settings:", window.location.hostname);
+    }
     
     // Validate connection to Firestore as required by SKILL.md
     const testConnection = async () => {
