@@ -1,1215 +1,151 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState } from 'react';
-import { AppProvider, useApp } from './context/AppContext';
-import { Sidebar } from './components/Sidebar';
-import { StatCard } from './components/StatCard';
-import { BookCard } from './components/BookCard';
-import { ChapterCard } from './components/ChapterCard';
-import { NotesEditor } from './components/NotesEditor';
-import { StatsCharts } from './components/StatsCharts';
-import { Book, Chapter, BookStatus, ChapterStatus, ChapterPriority } from './types';
-import { 
-  BookOpen, 
-  Feather, 
-  Flame, 
-  Sparkles, 
-  Trophy, 
-  Plus, 
-  Search, 
-  SlidersHorizontal, 
-  CheckCircle, 
-  Lock, 
-  TrendingUp, 
-  CloudAlert, 
-  User, 
-  Mail, 
-  Key, 
-  ChevronRight,
-  HelpCircle,
-  FileText
-} from 'lucide-react';
+import { GameProvider, useGame } from './context/GameContext';
+import NetflixSelector from './components/NetflixSelector';
+import Navbar from './components/Navbar';
+import Dashboard from './components/Dashboard';
+import Transactions from './components/Transactions';
+import PropertyMarket from './components/PropertyMarket';
+import StockMarket from './components/StockMarket';
+import Casino from './components/Casino';
+import Challenges from './components/Challenges';
+import ChatRoom from './components/ChatRoom';
+import AdminPanel from './components/AdminPanel';
+import { ShieldAlert, TrendingUp, AlertTriangle, Play, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-function DashboardContent() {
-  const { 
-    currentUser, 
-    userProfile, 
-    books, 
-    chapters, 
-    writingStreak, 
-    totalWords, 
-    totalBooksCount, 
-    totalChaptersCount, 
-    completionRate, 
-    recentActivity,
-    isFirebaseActive
-  } = useApp();
+function GameAppInner() {
+  const { players, currentPlayerId, activeMarketEvent } = useGame();
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
 
-  const finishedBooksCount = books.filter(b => b.status === 'Completed').length;
+  // Lockout system: verify pin exists
+  if (!currentPlayerId) {
+    return <NetflixSelector />;
+  }
+
+  const player = players[currentPlayerId];
+
+  // Secure checking - if user is banned
+  if (player.isBan) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-zinc-950 border border-red-500/20 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto text-xl border border-red-500/20 animate-pulse">
+            ⚠️
+          </div>
+          <h2 className="text-xl font-black text-red-500 tracking-wider">SOVEREIGN ACCESS TERMINATED</h2>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            Your boardroom credential slot has been suspended by High Command executive overrides. Unresolved banking anomalies detected on portfolio.
+          </p>
+          <div className="pt-2 text-[10px] text-zinc-600 font-mono tracking-widest uppercase">
+            STATUS CODE // EXPULSION_403
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 animate-fade-in select-none">
-      
-      {/* 1. WELCOME BOARD HERO DISPLAY */}
-      <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-950 to-amber-950/15 border border-slate-900/60 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-        {/* Abstract glowing sphere */}
-        <div className="absolute right-0 top-0 bottom-0 w-80 bg-amber-500/5 blur-[120px] rounded-full pointer-events-none" />
-        
-        <div className="space-y-2.5 z-10">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2.5 py-1 rounded-full font-black animate-pulse">StoryBlocks Studio</span>
-            <span className="text-[10px] font-mono text-slate-500">•</span>
-            <span className="text-[10px] font-mono text-slate-400">Time to write</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-black font-sans text-white tracking-tight leading-tight">
-            Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600 font-serif font-black">{userProfile?.displayName || 'Author'}</span>
-          </h1>
-          <p className="text-xs text-slate-400 max-w-xl leading-relaxed">
-            Your quill is active and loaded. Outlining novels, tracking weighted progress segments, and cloud documentation is active in real-time.
-          </p>
+    <div className="min-h-screen bg-[#050505] text-[#e0e0e0] flex flex-col justify-between overflow-hidden relative selection:bg-gold selection:text-black">
+      {/* Background Ambience */}
+      <div className="absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-gold/[0.03] to-transparent pointer-events-none blur-[120px]" />
+
+      {/* Real-time ticker banner (Stock tape feed) */}
+      <div className="bg-[#0a0a0a] border-b border-white/5 py-2 px-4 sm:px-8 text-[11px] font-mono text-zinc-400 overflow-hidden relative z-10 flex items-center space-x-6">
+        <div className="flex-shrink-0 flex items-center space-x-1 font-sans text-[10px] bg-gold/10 text-gold px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+          <TrendingUp className="w-3 h-3" />
+          <span>Board Tape COMMS</span>
         </div>
 
-        {/* Quick overall completion widget */}
-        <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-950/50 border border-slate-900">
-          <div className="flex flex-col text-right">
-            <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">Interactive Progress</span>
-            <span className="text-2xl font-black text-amber-500 tracking-tight mt-1">{completionRate}%</span>
+        {/* Moving Ticker Loop */}
+        <div className="relative flex-1 overflow-hidden h-4">
+          <div className="absolute flex space-x-8 animate-marquee whitespace-nowrap">
+            <span>● CAY: ${players.cay?.netWorth.toLocaleString()}</span>
+            <span>● BROOKE: ${players.brooke?.netWorth.toLocaleString()}</span>
+            <span>● DR. LEROY: ${players.dr_leroy?.netWorth.toLocaleString()}</span>
+            <span>● SOL: ${players.sol?.netWorth.toLocaleString()}</span>
+            <span>● YONNY: ${players.yonny?.netWorth.toLocaleString()}</span>
+            <span>● INDICES: AAPL $230 // TSLA $280 // KNGS $940 // BTC $92,000</span>
           </div>
-          <div className="h-10 w-10 shrink-0 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center font-mono font-black text-amber-500 text-sm">
-            %
-          </div>
+        </div>
+
+        <div className="hidden md:flex items-center space-x-2 text-zinc-500 text-[10px]">
+          <span>NETWORK LATENCY: 12ms</span>
+          <span>●</span>
+          <span>FDIC SECURED</span>
         </div>
       </div>
 
-      {/* 2. CORE DYNAMIC STATISTICS CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard
-          title="Daily Streak"
-          value={`${writingStreak} Days`}
-          icon={Flame}
-          description="Total consecutive days of story updates"
-          color="orange"
-        />
-        <StatCard
-          title="Books Outline"
-          value={totalBooksCount}
-          icon={BookOpen}
-          description={`With indeed ${finishedBooksCount} completed projects`}
-          color="amber"
-        />
-        <StatCard
-          title="Total Chapters"
-          value={totalChaptersCount}
-          icon={Feather}
-          description="Chapter outlines currently active"
-          color="sky"
-        />
-        <StatCard
-          title="Total Wordcount"
-          value={totalWords.toLocaleString()}
-          icon={TrendingUp}
-          description="Estimated page counts active in studio"
-          color="emerald"
-        />
-      </div>
+      {/* Main navigation Header */}
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* 3. VISUAL ACTIVITY AND HIGHLIGHT CHART GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart View */}
-        <div className="lg:col-span-2 space-y-4">
-          <StatsCharts />
+      {/* Dynamic System / Market Warnings Banner */}
+      <AnimatePresence>
+        {activeMarketEvent && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-yellow-500 text-zinc-950 px-4 py-2 text-xs font-bold font-mono tracking-wide flex items-center justify-between shadow"
+          >
+            <span className="flex items-center space-x-1.5">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>ALERT: {activeMarketEvent.title} IS ACTIVE. {activeMarketEvent.desc}</span>
+            </span>
+            <span className="text-[9px] uppercase tracking-widest bg-zinc-950 text-yellow-500 py-0.5 px-2 rounded-full font-sans font-extrabold shadow-sm">
+              ALERT SYSTEM ACTIVE
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Principal Contents viewport renders based on activeTab */}
+      <main className="flex-1 pb-20">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+          >
+            {activeTab === 'dashboard' && <Dashboard />}
+            {activeTab === 'ledger' && <Transactions />}
+            {activeTab === 'property' && <PropertyMarket />}
+            {activeTab === 'stocks' && <StockMarket />}
+            {activeTab === 'casino' && <Casino />}
+            {activeTab === 'challenges' && <Challenges />}
+            {activeTab === 'social' && <ChatRoom />}
+            {activeTab === 'admin' && <AdminPanel />}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      {/* Moving Activity Wire footer */}
+      <footer className="bg-[#0a0a0a] border-t border-white/5 py-4 px-4 sm:px-8 text-[11px] text-zinc-500 flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0 relative z-10 max-w-7xl mx-auto w-full">
+        <div className="flex items-center space-x-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-mono uppercase tracking-wider text-[10px] text-zinc-400">
+            Boardroom secure. No recent conflicts.
+          </span>
         </div>
 
-        {/* Recent Activity Sync Log feed */}
-        <div className="p-6 bg-slate-900/60 backdrop-blur-md border border-slate-900 rounded-2xl flex flex-col gap-4">
-          <div>
-            <h3 className="text-sm font-black font-sans text-slate-100 uppercase tracking-wider">Workspace Sync Log</h3>
-            <p className="text-xs text-slate-500 mt-1">Realtime logs of outline events and accomplishments.</p>
-          </div>
-
-          <div className="flex-1 overflow-y-auto max-h-[310px] space-y-4 pr-1">
-            {recentActivity.length === 0 ? (
-              <div className="h-44 flex flex-col items-center justify-center border border-dashed border-slate-900/60 rounded-xl max-w-xs mx-auto text-center p-4">
-                <CloudAlert className="h-5 w-5 text-slate-700 animate-bounce mb-2" />
-                <p className="text-[11px] text-slate-500">No events logged during the active session. Write or create outlines to log.</p>
-              </div>
-            ) : (
-              recentActivity.map((act) => (
-                <div key={act.id} className="flex gap-3 text-xs">
-                  <div className="h-2 w-2 rounded-full bg-amber-500 shrink-0 mt-1.5" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-slate-300 font-medium leading-relaxed">{act.details}</p>
-                    <span className="text-[9px] font-mono text-slate-500 mt-1 block">
-                      {new Date(act.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+        <div className="font-mono text-[10px] uppercase text-zinc-600 flex items-center space-x-1">
+          <span>CAPITAL KINGS GLOBAL SYSTEM VER 2.2 // DEEPMIND ANTIGRAVITY Engine</span>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
 
 export default function App() {
   return (
-    <AppProvider>
-      <MainAppShell />
-    </AppProvider>
-  );
-}
-
-function MainAppShell() {
-  const { 
-    currentUser, 
-    loading, 
-    isFirebaseActive,
-    signUp, 
-    logIn, 
-    logInWithGoogle, 
-    resetPassword,
-    books,
-    chapters,
-    createBook,
-    editBook,
-    removeBook,
-    createChapter,
-    editChapter,
-    removeChapter,
-    reorderChapters,
-    writingStreak,
-    totalWords,
-    userProfile,
-    importWorkspaceData,
-    logInAsDrLeul
-  } = useApp();
-
-  // Netflix-style Profile Login States
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [loginFeedback, setLoginFeedback] = useState('');
-  const [isForceOffline, setIsForceOffline] = useState(false);
-
-  // Navigation management states
-  const [currentView, setView] = useState('dashboard');
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
-  // Active book/chapter edit states
-  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
-  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
-
-  // Authentication screens states
-  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot'>('login');
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authName, setAuthName] = useState('');
-  const [authFeedback, setAuthFeedback] = useState('');
-
-  // Search & Filter state variables
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [genreFilter, setGenreFilter] = useState('ALL');
-
-  // Modals management states
-  const [showAddBookModal, setShowAddBookModal] = useState(false);
-  const [editingBook, setEditingBook] = useState<Book | null>(null);
-  const [bookTitleFld, setBookTitleFld] = useState('');
-  const [bookGenreFld, setBookGenreFld] = useState('Fantasy');
-  const [bookDescFld, setBookDescFld] = useState('');
-  const [bookGoalFld, setBookGoalFld] = useState(50000);
-  const [bookChapsFld, setBookChapsFld] = useState(12);
-  const [bookStatusFld, setBookStatusFld] = useState<BookStatus>('Draft');
-  const [bookCoverUrl, setBookCoverUrl] = useState('');
-
-  // Chapter Modal variables
-  const [showAddChapterModal, setShowAddChapterModal] = useState(false);
-  const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
-  const [chapTitleFld, setChapTitleFld] = useState('');
-  const [chapBlocksFld, setChapBlocksFld] = useState(2); // default Medium
-  const [chapPriorityFld, setChapPriorityFld] = useState<ChapterPriority>('Medium');
-  const [chapStatusFld, setChapStatusFld] = useState<ChapterStatus>('To Do');
-  const [chapSummaryFld, setChapSummaryFld] = useState('');
-
-  // Handle manual Sign-Up/Sign-In actions beautifully
-  const handleSignOperation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthFeedback('');
-    try {
-      if (authMode === 'signup') {
-        await signUp(authEmail, authPassword, authName);
-      } else if (authMode === 'login') {
-        await logIn(authEmail, authPassword);
-      } else {
-        await resetPassword(authEmail);
-        setAuthFeedback('Password reset link successfully generated. Check email.');
-      }
-    } catch (err: any) {
-      console.error("Sign-in operation failed:", err);
-      // Catch unauthorized domain error or default messages
-      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
-        setAuthFeedback('auth/unauthorized-domain');
-      } else {
-        setAuthFeedback(err.message || 'Operation failed. Verify parameters.');
-      }
-    }
-  };
-
-  // Create Book Outline Submit
-  const handleBookSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingBook) {
-      await editBook(editingBook.id, {
-        title: bookTitleFld,
-        genre: bookGenreFld,
-        description: bookDescFld,
-        writingGoal: Number(bookGoalFld),
-        plannedChapters: Number(bookChapsFld),
-        status: bookStatusFld,
-        coverImage: bookCoverUrl
-      });
-      setEditingBook(null);
-    } else {
-      await createBook({
-        title: bookTitleFld,
-        genre: bookGenreFld,
-        description: bookDescFld,
-        writingGoal: Number(bookGoalFld),
-        plannedChapters: Number(bookChapsFld),
-        status: bookStatusFld,
-        coverImage: bookCoverUrl
-      });
-    }
-    // Reset Form Fields
-    setBookTitleFld('');
-    setBookDescFld('');
-    setBookCoverUrl('');
-    setShowAddBookModal(false);
-  };
-
-  // Create Chapter Submit
-  const handleChapterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedBookId) return;
-
-    if (editingChapter) {
-      await editChapter(editingChapter.id, {
-        title: chapTitleFld,
-        blocks: Number(chapBlocksFld),
-        priority: chapPriorityFld,
-        status: chapStatusFld,
-        summary: chapSummaryFld
-      });
-      setEditingChapter(null);
-    } else {
-      await createChapter({
-        bookId: selectedBookId,
-        title: chapTitleFld,
-        blocks: Number(chapBlocksFld),
-        priority: chapPriorityFld,
-        status: chapStatusFld,
-        summary: chapSummaryFld
-      });
-    }
-
-    setChapTitleFld('');
-    setChapSummaryFld('');
-    setChapBlocksFld(2);
-    setShowAddChapterModal(false);
-  };
-
-  // Render initial Loading screen securely
-  if (loading) {
-    return (
-      <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center gap-4 text-slate-100">
-        <div className="h-10 w-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="font-mono text-xs text-slate-500 tracking-widest uppercase">Initializing StoryBlocks...</p>
-      </div>
-    );
-  }  // Render Authentication overlay if session does not exist
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen w-screen bg-[#141414] flex flex-col justify-between p-6 md:p-10 selection:bg-red-600/35 relative overflow-hidden font-sans">
-        {/* Subtle Netflix-Red Ambient Radial Glow */}
-        <div className="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-red-600/[0.04] blur-[140px] pointer-events-none" />
-
-        {/* 1. Header with stark minimalist Brand */}
-        <header className="flex items-center justify-between w-full max-w-5xl mx-auto z-10">
-          <div className="flex items-center gap-2">
-            <span className="font-sans font-black text-2xl md:text-3xl tracking-tighter text-[#E50914] select-none">
-              STORYBLOCKS
-            </span>
-            <span className="text-[9px] font-mono font-bold tracking-widest text-slate-500 uppercase px-1.5 py-0.5 border border-slate-800 rounded bg-slate-900/40">
-              Studio
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
-            <span className={`h-2 w-2 rounded-full ${isFirebaseActive ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-amber-500 shadow-amber-500/20'} animate-pulse`} />
-            <span className="uppercase text-[9px] tracking-wider">
-              {isFirebaseActive ? 'Cloud Online' : 'Local Archive'}
-            </span>
-          </div>
-        </header>
-
-        {/* 2. Main Center Profile Selector */}
-        <main className="flex-1 flex flex-col items-center justify-center py-10 z-10">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.45, ease: 'easeOut' }}
-            className="text-center space-y-8"
-          >
-            <h1 className="text-3xl md:text-5xl font-sans font-medium tracking-tight text-white mb-2 select-none">
-              Who's writing?
-            </h1>
-
-            <div className="flex flex-col items-center gap-6">
-              <motion.div
-                onClick={async () => {
-                  if (isLoggingIn) return;
-                  setIsLoggingIn(true);
-                  setLoginFeedback('');
-                  try {
-                    // Trigger the customized bulletproof login for Dr. Leul
-                    await logInAsDrLeul(isForceOffline);
-                  } catch (err: any) {
-                    console.error("Login trigger failed:", err);
-                    setLoginFeedback(err.message || 'Verification deferred. Opening local sandbox workspace.');
-                    // Force complete fallback bypass to make sure they are never locked out
-                    await logInAsDrLeul(true);
-                  } finally {
-                    setIsLoggingIn(false);
-                  }
-                }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.98 }}
-                className="group flex flex-col items-center gap-4 cursor-pointer focus:outline-none"
-              >
-                {/* Netflix Avatar Icon Custom Render */}
-                <div className="relative w-32 h-32 md:w-36 md:h-36 rounded-lg overflow-hidden border-3 border-transparent group-hover:border-white transition-all duration-300 shadow-2xl bg-gradient-to-br from-[#E50914] via-[#b20710] to-rose-950 flex items-center justify-center">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white font-serif font-black select-none text-4xl tracking-tighter">
-                    DL
-                    <div className="absolute inset-0 bg-black/15 group-hover:bg-transparent transition-colors duration-300" />
-                  </div>
-
-                  {/* Smiling Face overlay resembling the Netflix smiley logo */}
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center opacity-85 group-hover:opacity-100 transition-opacity">
-                    <div className="w-8.5 h-1.5 bg-white rounded-full mt-1.5" />
-                  </div>
-
-                  {/* Loading Spinner */}
-                  {isLoggingIn && (
-                    <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center gap-1.5 z-20">
-                      <div className="w-8 h-8 border-3 border-[#E50914] border-t-transparent rounded-full animate-spin" />
-                      <span className="text-[9px] font-mono text-[#E50914] font-black uppercase tracking-widest">
-                        Syncing...
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Profile Title Text */}
-                <p className="text-slate-400 group-hover:text-white font-sans text-base md:text-lg tracking-wide transition-colors duration-200">
-                  Dr. Leul
-                </p>
-              </motion.div>
-
-              {/* Login Error Prompt */}
-              {loginFeedback && (
-                <div className="max-w-xs p-3 rounded-lg bg-red-950/20 border border-red-900/30 text-center animate-pulse mt-2">
-                  <p className="text-xs font-mono font-medium text-red-400">
-                    {loginFeedback}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Offline Local Storage Checkbox and Details */}
-            <div className="flex flex-col items-center gap-4 pt-4">
-              <label className="flex items-center gap-2 text-xs text-slate-500 cursor-pointer select-none hover:text-slate-400 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={isForceOffline}
-                  onChange={(e) => setIsForceOffline(e.target.checked)}
-                  className="rounded bg-black border-slate-700 text-[#E50914] focus:ring-[#E50914] h-3.5 w-3.5"
-                />
-                <span>Force Bulletproof Local Persistence (Offline Bypass)</span>
-              </label>
-
-              <p className="text-[10px] text-slate-600 font-mono tracking-wide max-w-xs mx-auto leading-relaxed">
-                StoryBlocks stores all manuscripts, chapter weights, outline statistics, and trophies securely. Reusable and saved automatically.
-              </p>
-            </div>
-          </motion.div>
-        </main>
-
-        {/* 3. Footer */}
-        <footer className="w-full text-center max-w-5xl mx-auto border-t border-slate-900/60 pt-4 z-10">
-          <p className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">
-            © 2026 StoryBlocks Workspace • Author Vault for Dr. Leul
-          </p>
-        </footer>
-      </div>
-    );
-  }
-
-  // Active outliner detail views calculations
-  const activeBook = books.find(b => b.id === selectedBookId);
-  const activeChapter = chapters.find(c => c.id === activeChapterId);
-
-  // Filter book arrays
-  const filteredBooks = books.filter(b => {
-    const matchQuery = b.title.toLowerCase().includes(searchQuery.toLowerCase()) || b.genre.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchStatus = statusFilter === 'ALL' || b.status === statusFilter;
-    const matchGenre = genreFilter === 'ALL' || b.genre === genreFilter;
-    return matchQuery && matchStatus && matchGenre;
-  });
-
-  // Unique genres from books
-  const booksGenresList = Array.from(new Set(books.map(b => b.genre)));
-
-  // Reordering handoff helpers
-  const moveChapterAtIndex = (bookId: string, fromIdx: number, toIdx: number) => {
-    const bookChaps = chapters.filter(c => c.bookId === bookId);
-    if (fromIdx < 0 || fromIdx >= bookChaps.length || toIdx < 0 || toIdx >= bookChaps.length) return;
-    
-    // Copy array and swap
-    const copy = [...bookChaps];
-    const temp = copy[fromIdx];
-    copy[fromIdx] = copy[toIdx];
-    copy[toIdx] = temp;
-
-    reorderChapters(bookId, copy);
-  };
-
-  return (
-    <div className="h-screen w-screen bg-slate-950 flex overflow-hidden font-sans select-none text-slate-100">
-      
-      {/* 1. Sidebar Component Block */}
-      <Sidebar
-        currentView={currentView}
-        setView={(v) => {
-          setView(v);
-          setSelectedBookId(null);
-          setActiveChapterId(null);
-        }}
-        isOpen={mobileSidebarOpen}
-        toggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-      />
-
-      {/* 2. Main content area panel */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        
-        {/* Mobile Header elements */}
-        <div className="lg:hidden flex items-center justify-between px-6 py-4 bg-slate-950 border-b border-slate-900 shrink-0 h-16">
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm font-black text-white uppercase tracking-wider">StoryBlocks</h1>
-          </div>
-          <button
-            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="p-1.5 border border-slate-900 rounded-lg text-slate-400 hover:text-white"
-          >
-            <SlidersHorizontal className="h-4.5 w-4.5" />
-          </button>
-        </div>
-
-        {/* Dynamic Nested Route View renderer */}
-        <div className="flex-grow overflow-y-auto p-6 md:p-8 selection:bg-amber-500/25">
-          <AnimatePresence mode="wait">
-            
-            {/* Notes Detailed Canvas overlay page takes total priority if active */}
-            {activeChapter && activeBook ? (
-              <motion.div
-                key="editor"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 z-30"
-              >
-                <NotesEditor
-                  chapter={activeChapter}
-                  associatedBook={activeBook}
-                  onBack={() => {
-                    setActiveChapterId(null);
-                    setView('chapters');
-                  }}
-                />
-              </motion.div>
-            ) : null}
-
-            {/* View book outline specific sheet */}
-            {selectedBookId && activeBook && !activeChapterId && (
-              <motion.div
-                key="book-chapters"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                {/* Book header detail widget */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 p-6 bg-slate-900/30 rounded-3xl border border-slate-900">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
-                      <button onClick={() => setSelectedBookId(null)} className="hover:text-amber-500 font-bold">My Books</button>
-                      <span>/</span>
-                      <span className="text-slate-400">{activeBook.title}</span>
-                    </div>
-                    <h2 className="text-xl md:text-2xl font-serif font-black text-white leading-tight">{activeBook.title} Outline Skeleton</h2>
-                    <p className="text-xs text-slate-400 max-w-xl">{activeBook.description}</p>
-                  </div>
-
-                  <div className="flex items-center gap-3 select-none shrink-0 self-start md:self-center">
-                    <button
-                      onClick={() => {
-                        setChapTitleFld('');
-                        setChapSummaryFld('');
-                        setEditingChapter(null);
-                        setShowAddChapterModal(true);
-                      }}
-                      className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-600 hover:to-amber-500 text-slate-950 font-black rounded-xl text-xs shadow-md"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Add Chapter Outline</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => setSelectedBookId(null)}
-                      className="px-4 py-2 border border-slate-900 hover:border-slate-800 text-xs font-medium rounded-xl text-slate-300"
-                    >
-                      Return to Outline lists
-                    </button>
-                  </div>
-                </div>
-
-                {/* Chapters outlines list renderer */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-900/50 pb-2">
-                    <h3 className="text-xs font-mono font-black text-slate-500 uppercase tracking-widest">Outline Index Maps</h3>
-                    <span className="text-[10px] font-mono text-slate-600">Drag/reorder chapters to sync plot orderings</span>
-                  </div>
-
-                  {chapters.filter(c => c.bookId === selectedBookId).length === 0 ? (
-                    <div className="py-20 text-center border border-dashed border-slate-900/60 rounded-3xl max-w-md mx-auto p-5">
-                      <Feather className="h-10 w-10 text-slate-700 animate-bounce mx-auto mb-3" />
-                      <h4 className="text-sm font-bold text-slate-200 uppercase">Outline Map Blank</h4>
-                      <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">This book doesn't contain chapter nodes yet. Click "Add Chapter" to begin outlining.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3.5">
-                      {chapters
-                        .filter(c => c.bookId === selectedBookId)
-                        .map((chap, idx, arr) => (
-                          <ChapterCard
-                            key={chap.id}
-                            chapter={chap}
-                            index={idx}
-                            totalChapters={arr.length}
-                            onEdit={(tc) => {
-                              setEditingChapter(tc);
-                              setChapTitleFld(tc.title);
-                              setChapBlocksFld(tc.blocks);
-                              setChapPriorityFld(tc.priority);
-                              setChapStatusFld(tc.status);
-                              setChapSummaryFld(tc.summary || '');
-                              setShowAddChapterModal(true);
-                            }}
-                            onDelete={(id) => removeChapter(id)}
-                            onOpen={(id) => setActiveChapterId(id)}
-                            onMoveUp={() => moveChapterAtIndex(selectedBookId, idx, idx - 1)}
-                            onMoveDown={() => moveChapterAtIndex(selectedBookId, idx, idx + 1)}
-                          />
-                        ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Active Core Navigation view tabs */}
-            {!selectedBookId && currentView === 'dashboard' && (
-              <motion.div key="dashboard">
-                <DashboardContent />
-              </motion.div>
-            )}
-
-            {!selectedBookId && currentView === 'books' && (
-              <motion.div key="books" className="space-y-6">
-                
-                {/* Title & Actions Bar */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 border-b border-slate-900/80 pb-5">
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-black font-sans uppercase tracking-tight text-white leading-tight">My Book Outlines</h2>
-                    <p className="text-xs text-slate-500">Edit details, upload custom presets, and explore outlines mapping.</p>
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      setEditingBook(null);
-                      setBookTitleFld('');
-                      setBookDescFld('');
-                      setBookCoverUrl('');
-                      setBookGoalFld(50000);
-                      setBookChapsFld(12);
-                      setBookStatusFld('Draft');
-                      setShowAddBookModal(true);
-                    }}
-                    className="flex items-center gap-1 px-4 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-black rounded-xl text-xs shadow-md self-start md:self-center cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Outline New Book</span>
-                  </button>
-                </div>
-
-                {/* Filters Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-900/20 rounded-2xl border border-slate-900/60 items-center">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-2 text-slate-600 h-4.5 w-4.5" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search books, genres, tags..."
-                      className="w-full pl-9 pr-4 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-xl p-1.5 focus:outline-none focus:border-amber-500"
-                    >
-                      <option value="ALL">Status: All</option>
-                      <option value="Draft">Draft</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-
-                    <select
-                      value={genreFilter}
-                      onChange={(e) => setGenreFilter(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-xl p-1.5 focus:outline-none focus:border-amber-500"
-                    >
-                      <option value="ALL">Genre: All</option>
-                      {booksGenresList.map((g) => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Grid Lists items */}
-                {filteredBooks.length === 0 ? (
-                  <div className="py-24 text-center border border-dashed border-slate-900/60 rounded-3xl max-w-sm mx-auto p-5">
-                    <BookOpen className="h-10 w-10 text-slate-700 animate-bounce mx-auto mb-3" />
-                    <h4 className="text-sm font-bold text-slate-200 uppercase">Book Outline Shelf Empty</h4>
-                    <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">No matching books found. Outline a new book to build shelf indexes.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredBooks.map((book) => (
-                      <BookCard
-                        key={book.id}
-                        book={book}
-                        onEdit={(tb) => {
-                          setEditingBook(tb);
-                          setBookTitleFld(tb.title);
-                          setBookGenreFld(tb.genre);
-                          setBookDescFld(tb.description || '');
-                          setBookGoalFld(tb.writingGoal || 50000);
-                          setBookChapsFld(tb.plannedChapters || 12);
-                          setBookStatusFld(tb.status);
-                          setBookCoverUrl(tb.coverImage || '');
-                          setShowAddBookModal(true);
-                        }}
-                        onDelete={(id) => removeBook(id)}
-                        onSelect={(id) => setSelectedBookId(id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {!selectedBookId && currentView === 'chapters' && (
-              <motion.div key="chapters" className="space-y-6">
-                <div className="border-b border-slate-900/80 pb-5">
-                  <h2 className="text-xl font-black font-sans uppercase tracking-tight text-white leading-tight">Book Outliner Workbench</h2>
-                  <p className="text-xs text-slate-500 mt-1">Select a core novel from the list below to begin building chapter outlines, note templates, and dynamic segments.</p>
-                </div>
-
-                {books.length === 0 ? (
-                  <div className="py-20 text-center border border-dashed border-slate-900/60 rounded-3xl max-w-md mx-auto p-5">
-                    <BookOpen className="h-10 w-10 text-slate-700 mx-auto animate-bounce mb-3" />
-                    <h4 className="text-sm font-bold text-slate-200">Outline shelf blank</h4>
-                    <p className="text-xs text-slate-500 mt-1">You must first outline an active book profile to deploy chapter outliner trees.</p>
-                    <button
-                      onClick={() => setView('books')}
-                      className="mt-4 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 hover:border-amber-500/35 rounded-xl text-xs font-black font-mono"
-                    >
-                      Outline Your First Book
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {books.map((b) => {
-                      const associatedChaps = chapters.filter(c => c.bookId === b.id).length;
-                      return (
-                        <div
-                          key={b.id}
-                          onClick={() => setSelectedBookId(b.id)}
-                          className="p-6 bg-slate-900/50 hover:bg-slate-900/80 border border-slate-900/80 hover:border-amber-500/20 rounded-2xl cursor-pointer shadow-md flex flex-col justify-between hover:scale-[1.01] transition-all duration-300"
-                        >
-                          <div>
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500 bg-slate-950 px-2 py-0.5 border border-slate-900 rounded-full">{b.genre}</span>
-                            <h3 className="text-base font-black text-slate-200 mt-3 hover:text-amber-500 truncate">{b.title}</h3>
-                            <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">{b.description || 'No outline concepts written.'}</p>
-                          </div>
-                          <div className="flex justify-between items-center text-xs font-mono text-slate-500 mt-5 pt-3 border-t border-slate-950">
-                            <span>{associatedChaps} outlined chapters</span>
-                            <span className="text-amber-500 flex items-center gap-1 font-black">Outline maps <ChevronRight className="h-3.5 w-3.5" /></span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {!selectedBookId && currentView === 'analytics' && (
-              <motion.div key="analytics" className="space-y-6">
-                <div className="border-b border-slate-900/80 pb-5">
-                  <h2 className="text-xl font-black font-sans uppercase tracking-tight text-white leading-tight">Author Stats & Analytics Dashboard</h2>
-                  <p className="text-xs text-slate-500 mt-1">Review live measurements of writing speeds, weekly outputs, goals ratios, and chapter segments completion indexes.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div className="p-6 bg-slate-900/40 rounded-2xl border border-slate-900 flex flex-col gap-1 text-center select-none">
-                    <span className="text-[10px] font-mono text-slate-500 uppercase font-black">Total Words Drafted</span>
-                    <span className="text-3xl font-serif font-black text-amber-500 tracking-tight mt-1">{totalWords.toLocaleString()}</span>
-                  </div>
-                  <div className="p-6 bg-slate-900/40 rounded-2xl border border-slate-900 flex flex-col gap-1 text-center select-none">
-                    <span className="text-[10px] font-mono text-slate-500 uppercase font-black">Dynamic Streak</span>
-                    <span className="text-3xl font-serif font-black text-amber-500 tracking-tight mt-1">{writingStreak} Days</span>
-                  </div>
-                  <div className="p-6 bg-slate-900/40 rounded-2xl border border-slate-900 flex flex-col gap-1 text-center select-none">
-                    <span className="text-[10px] font-mono text-slate-500 uppercase font-black">Chapter Outline Goals Ratio</span>
-                    <span className="text-3xl font-serif font-black text-amber-500 tracking-tight mt-1">
-                      {chapters.filter(c => c.status === 'Completed').length} completed
-                    </span>
-                  </div>
-                </div>
-                <StatsCharts />
-              </motion.div>
-            )}
-
-            {!selectedBookId && currentView === 'badges' && (
-              <motion.div key="badges" className="space-y-6">
-                <div className="border-b border-slate-900/80 pb-5 flex justify-between items-center flex-wrap gap-4">
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-black font-sans uppercase tracking-tight text-white leading-tight">Author Achievements & Badges</h2>
-                    <p className="text-xs text-slate-500">Unlocking custom medals dynamically in real-time as you write novels.</p>
-                  </div>
-                  <div className="flex gap-2 p-3 rounded-2xl bg-slate-900/40 border border-slate-900 items-center justify-center font-mono text-xs font-bold text-slate-400">
-                    <Trophy className="h-4 w-4 text-amber-400 shrink-0" />
-                    <span>Unlocked Trophies: {userProfile?.badges.length || 0}</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {/* System medals list items */}
-                  {Array.from({ length: 7 }).map((_, idx) => {
-                    const presetMedals = [
-                      { id: 'first_book', title: 'World Builder', description: 'Create your first book outline', trigger: '1 book profile', check: books.length >= 1 },
-                      { id: 'first_chapter', title: 'First Chapter', description: 'Create your first book chapter', trigger: '1 chapter outline', check: chapters.length >= 1 },
-                      { id: 'novelist_outline', title: 'Architect of Worlds', description: 'Outline at least 10 chapters', trigger: '10 chapters outline', check: chapters.length >= 10 },
-                      { id: 'wordsmith_1k', title: 'Initiate of Words', description: 'Write 1,000 words in StoryBlocks', trigger: '1,000 words writing', check: totalWords >= 1000 },
-                      { id: 'wordsmith_10k', title: 'Master Novelist', description: 'Write 10,000 words in StoryBlocks', trigger: '10,000 words writing', check: totalWords >= 10000 },
-                      { id: 'streak_3', title: 'Sustained Quill', description: 'Maintain a 3-day active writing streak', trigger: '3 days streak logs', check: (userProfile?.writingStreak || 0) >= 3 },
-                      { id: 'streak_7', title: 'Relentless Muse', description: 'Maintain a 7-day active writing streak', trigger: '7 days streak logs', check: (userProfile?.writingStreak || 0) >= 7 },
-                    ];
-
-                    const item = presetMedals[idx];
-                    const isUnlocked = userProfile?.badges.includes(item.id) || item.check;
-
-                    return (
-                      <div
-                        key={item.id}
-                        className={`flex flex-col justify-between p-5 rounded-2xl border transition-all duration-300 ${
-                          isUnlocked 
-                            ? 'bg-gradient-to-br from-slate-900 to-amber-950/10 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.05)] text-slate-100' 
-                            : 'bg-slate-950 border-slate-900 text-slate-500'
-                        }`}
-                      >
-                        <div>
-                          <div className={`h-10 w-10 rounded-xl flex items-center justify-center border ${isUnlocked ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-slate-900 border-slate-950 text-slate-700'}`}>
-                            {isUnlocked ? <Trophy className="h-5 w-5" /> : <Lock className="h-4.5 w-4.5" />}
-                          </div>
-                          <h3 className={`text-sm font-black mt-4 ${isUnlocked ? 'text-slate-100' : 'text-slate-500'}`}>{item.title}</h3>
-                          <p className={`text-xs mt-1 leading-relaxed ${isUnlocked ? 'text-slate-400' : 'text-slate-600'}`}>{item.description}</p>
-                        </div>
-                        <span className={`text-[10px] font-mono mt-4 block p-1.5 rounded bg-slate-950/40 border border-slate-900/60 text-center uppercase tracking-wider font-bold ${isUnlocked ? 'text-amber-500' : 'text-slate-600'}`}>
-                          {isUnlocked ? '🏅 Trophy unlocked!' : `Requires: ${item.trigger}`}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-
-            {!selectedBookId && currentView === 'settings' && (
-              <motion.div key="settings" className="space-y-6 max-w-2xl mx-auto">
-                <div className="border-b border-slate-900/80 pb-5">
-                  <h2 className="text-xl font-black font-sans uppercase tracking-tight text-white leading-tight">Settings & Workspace Config</h2>
-                  <p className="text-xs text-slate-500">Fine-tune your local workbench settings and check cloud database properties.</p>
-                </div>
-
-                {/* Profile Widget */}
-                <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-2xl flex flex-col gap-4">
-                  <h3 className="text-xs font-mono font-black text-slate-400 uppercase tracking-wider border-b border-slate-950 pb-2">Author profile details</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1 text-xs">
-                      <span className="text-slate-500">Author Name</span>
-                      <span className="font-bold text-slate-200 mt-1">{userProfile?.displayName || 'Novel Writer'}</span>
-                    </div>
-                    <div className="flex flex-col gap-1 text-xs">
-                      <span className="text-slate-500">Email Address</span>
-                      <span className="font-mono text-slate-200 mt-1 truncate">{currentUser?.email || 'writer@storyblocks.local'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Firebase Connection details panel */}
-                <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-2xl flex flex-col gap-4">
-                  <h3 className="text-xs font-mono font-black text-slate-400 uppercase tracking-wider border-b border-slate-950 pb-2">Firebase Synchronizer Settings</h3>
-                  <div className="flex items-center gap-3">
-                    <div className={`h-25 w-2.5 rounded-full ${isFirebaseActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                    <span className="text-xs font-mono">
-                      {isFirebaseActive ? 'Status: Real-Time Synced with Cloud Firebase Firestore Services' : 'Status: Simulated Workbench Sandbox Safe Local Profile Mode'}
-                    </span>
-                  </div>
-                  
-                  {!isFirebaseActive && (
-                    <div className="text-xs text-slate-400 leading-relaxed bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 space-y-2.5">
-                      <p className="font-bold text-amber-500 flex items-center gap-1.5"><CloudAlert className="h-4 w-4 shrink-0" /> Local Safe-Zone Sandbox Mode</p>
-                      <p>StoryBlocks detects that Firebase services are not provisioned or configured yet. This is absolutely normal! All of your books, outline maps, progress blocks, and research sheets are stored in your secure and responsive client-side Workspace Sandbox.</p>
-                      <p className="underline">To connect your live Firebase credentials cloud profile:</p>
-                      <ol className="list-decimal pl-5 space-y-1 text-slate-300">
-                        <li>Locate the **Secrets panel** inside the AI Studio code workspace editor.</li>
-                        <li>Sync and run the Firebase setup from settings to generate the credentials.</li>
-                        <li>All of your sandbox models will cleanly migrate over!</li>
-                      </ol>
-                    </div>
-                  )}
-                </div>
-
-                {/* Local Storage Workspace clean widget */}
-                <div className="p-5 bg-slate-900/40 border border-slate-900 rounded-2xl flex flex-col gap-4">
-                  <h3 className="text-xs font-mono font-black text-slate-400 uppercase tracking-wider border-b border-slate-950 pb-2">Data Management Utility</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">Securely download or export a backup copy of all StoryBlocks outline schemas, or upload a previously exported backup file to restore your workspace records instantly.</p>
-                  
-                  <div className="flex flex-col sm:flex-row gap-3.5 items-stretch sm:items-center">
-                    <button
-                      onClick={() => {
-                        const data = {
-                          books,
-                          chapters,
-                          profile: userProfile
-                        };
-                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `storyblocks_author_backup_${new Date().toISOString().split('T')[0]}.json`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(url);
-                      }}
-                      className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs font-mono text-slate-300 hover:text-white rounded-xl font-bold transition-all pointer-events-auto"
-                    >
-                      🚀 Backup & Export JSON
-                    </button>
-
-                    <label className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-600/20 to-amber-500/20 hover:from-amber-600/30 hover:to-amber-500/30 border border-amber-500/30 text-xs font-mono text-amber-500 hover:text-amber-400 rounded-xl font-black cursor-pointer transition-all">
-                      <FileText className="h-4 w-4" />
-                      <span>Upload Backup JSON</span>
-                      <input
-                        type="file"
-                        accept=".json"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          
-                          try {
-                            const reader = new FileReader();
-                            reader.onload = async (evt) => {
-                              try {
-                                const parsed = JSON.parse(evt.target?.result as string);
-                                await importWorkspaceData(parsed);
-                                alert("Workspace successfully imported! All novels and chapter outline nodes have been loaded.");
-                              } catch (err: any) {
-                                alert("Failed to parse the backup file: " + err.message);
-                              }
-                            };
-                            reader.readAsText(file);
-                          } catch (err: any) {
-                            alert("Import utility failed: " + err.message);
-                          }
-                        }}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* 3. MODAL OVERLAY: CREATE/EDIT BOOK INFO */}
-      <AnimatePresence>
-        {showAddBookModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAddBookModal(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            
-            <motion.form
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              onSubmit={handleBookSubmit}
-              className="relative w-full max-w-lg p-6 md:p-8 rounded-3xl bg-slate-900/95 border border-slate-900/80 text-left z-10 shadow-2xl flex flex-col gap-4 outline-none"
-            >
-              <h3 className="text-lg font-black font-sans uppercase tracking-tight text-white">
-                {editingBook ? 'Edit Book Profile Outline' : 'Outline New Book'}
-              </h3>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Book Novel Title</label>
-                <input
-                  type="text"
-                  required
-                  value={bookTitleFld}
-                  onChange={(e) => setBookTitleFld(e.target.value)}
-                  placeholder="e.g. Frankstein, The Alchemist"
-                  className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3.5">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Book Genre Category</label>
-                  <select
-                    value={bookGenreFld}
-                    onChange={(e: any) => setBookGenreFld(e.target.value)}
-                    className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-amber-500 transition-all font-medium"
-                  >
-                    <option value="Fantasy">✨ Fantasy</option>
-                    <option value="Sci-Fi">🔮 Sci-Fi</option>
-                    <option value="Mystery">🕵️ Mystery</option>
-                    <option value="Drama">🎭 Drama</option>
-                    <option value="Other">📚 Other General</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Planned Chapters Target</label>
-                  <input
-                    type="number"
-                    required
-                    value={bookChapsFld}
-                    onChange={(e) => setBookChapsFld(Number(e.target.value))}
-                    className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3.5">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Target Word Goal</label>
-                  <input
-                    type="number"
-                    value={bookGoalFld}
-                    onChange={(e) => setBookGoalFld(Number(e.target.value))}
-                    className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Current Outline Status</label>
-                  <select
-                    value={bookStatusFld}
-                    onChange={(e: any) => setBookStatusFld(e.target.value)}
-                    className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="Draft">Draft Outline</option>
-                    <option value="In Progress">Active drafting</option>
-                    <option value="Completed">Completed Novel</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Plot logline / Description outline</label>
-                <textarea
-                  value={bookDescFld}
-                  onChange={(e) => setBookDescFld(e.target.value)}
-                  placeholder="A short plot sentence explaining the novel outline target..."
-                  rows={3}
-                  className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-500 resize-none"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Custom Cover URL (Optional)</label>
-                <input
-                  type="text"
-                  value={bookCoverUrl}
-                  onChange={(e) => setBookCoverUrl(e.target.value)}
-                  placeholder="https://image-url-for-custom-cover.jpg"
-                  className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-500"
-                />
-              </div>
-
-              <div className="flex items-center gap-2.5 justify-end mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddBookModal(false)}
-                  className="px-4.5 py-2 border border-slate-900 text-xs font-bold rounded-xl text-slate-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4.5 py-2 bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer"
-                >
-                  Save Outline Changes
-                </button>
-              </div>
-            </motion.form>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ========================================================= */}
-      {/* 4. MODAL OVERLAY: CREATE/EDIT CHAPTER INFO */}
-      <AnimatePresence>
-        {showAddChapterModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAddChapterModal(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            
-            <motion.form
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              onSubmit={handleChapterSubmit}
-              className="relative w-full max-w-lg p-6 md:p-8 rounded-3xl bg-slate-900/95 border border-slate-900/80 text-left z-10 shadow-2xl flex flex-col gap-4 outline-none"
-            >
-              <h3 className="text-lg font-black font-sans uppercase tracking-tight text-white">
-                {editingChapter ? 'Edit Chapter Outline Segment' : 'Outline Chapter Segment'}
-              </h3>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Chapter Outline title</label>
-                <input
-                  type="text"
-                  required
-                  value={chapTitleFld}
-                  onChange={(e) => setChapTitleFld(e.target.value)}
-                  placeholder="e.g. Chapter 1: The Gathering Storm"
-                  className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3.5">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Progress Weight size</label>
-                  <select
-                    value={chapBlocksFld}
-                    onChange={(e) => setChapBlocksFld(Number(e.target.value))}
-                    className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-350 focus:outline-none"
-                  >
-                    <option value={1}>1 Block (Small segments ~1.5k words)</option>
-                    <option value={2}>2 Blocks (Medium segments ~3.5k words)</option>
-                    <option value={3}>3 Blocks (Large segments ~5k+ words)</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Priority Tier</label>
-                  <select
-                    value={chapPriorityFld}
-                    onChange={(e: any) => setChapPriorityFld(e.target.value)}
-                    className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-350 focus:outline-none"
-                  >
-                    <option value="Low">Low Priority</option>
-                    <option value="Medium">Medium Priority</option>
-                    <option value="High">High Outline Priority</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Draft Status</label>
-                <select
-                  value={chapStatusFld}
-                  onChange={(e: any) => setChapStatusFld(e.target.value)}
-                  className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-350 focus:outline-none"
-                >
-                  <option value="To Do">To Do</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="In Review">In Review</option>
-                  <option value="Completed">Completed Segment</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-mono text-slate-500 uppercase font-black">Outline Synopsis</label>
-                <textarea
-                  value={chapSummaryFld}
-                  onChange={(e) => setChapSummaryFld(e.target.value)}
-                  placeholder="A short synoptical outline notes of what happens in this chapter..."
-                  rows={3}
-                  className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-amber-500 resize-none"
-                />
-              </div>
-
-              <div className="flex items-center gap-2.5 justify-end mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddChapterModal(false)}
-                  className="px-4.5 py-2 border border-slate-900 text-xs font-bold rounded-xl text-slate-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4.5 py-2 bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer"
-                >
-                  Save Outline Changes
-                </button>
-              </div>
-            </motion.form>
-          </div>
-        )}
-      </AnimatePresence>
-
-    </div>
+    <GameProvider>
+      <GameAppInner />
+    </GameProvider>
   );
 }
