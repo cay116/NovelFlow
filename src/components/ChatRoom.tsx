@@ -15,7 +15,7 @@ export default function ChatRoom() {
   const [activeChannel, setActiveChannel] = useState<'global' | string>('global'); // 'global' or other player ID
   const [inVoiceRoom, setInVoiceRoom] = useState<boolean>(false);
   const [voiceUsers, setVoiceUsers] = useState<string[]>(['yonny']);
-  const [friendsList, setFriendsList] = useState<string[]>(['brooke', 'sol']);
+  const [friendsList, setFriendsList] = useState<string[]>(['brook', 'sol']);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 

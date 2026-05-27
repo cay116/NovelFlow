@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export default function Challenges() {
   const { players, currentPlayerId, challenges, sendChallenge, acceptChallenge, declineChallenge, resolveChallenge } = useGame();
-  const [targetOpponentId, setTargetOpponentId] = useState<string>('brooke');
+  const [targetOpponentId, setTargetOpponentId] = useState<string>('brook');
   const [wager, setWager] = useState<string>('1500000');
   const [gameChoice, setGameChoice] = useState<'FIFA' | 'Monopoly' | 'Basketball' | 'Custom'>('FIFA');
   const [error, setError] = useState<string | null>(null);

@@ -190,7 +190,7 @@ export default function NetflixSelector() {
 
             {/* Quick Helper Tips */}
             <div className="mt-12 text-center text-[11px] text-zinc-500 max-w-md mx-auto px-4 bg-[#0a0a0a] p-3 rounded-lg border border-gold/10">
-              💡 <span className="text-zinc-400 font-medium">Testing Tip:</span> You can switch players at any time to execute multi-party investments. Use the default 4-digit PINs (e.g. CAY is <code className="text-gold font-bold">1111</code>, Brooke is <code className="text-gold font-bold">2222</code>).
+              💡 <span className="text-zinc-400 font-medium">Testing Tip:</span> You can switch players at any time to execute multi-party investments. Use the default 4-digit PINs (e.g. CAY is <code className="text-gold font-bold">1111</code>, Brook is <code className="text-gold font-bold">2222</code>).
             </div>
           </motion.div>
         ) : (

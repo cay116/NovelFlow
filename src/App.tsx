@@ -19,7 +19,7 @@ import { ShieldAlert, TrendingUp, AlertTriangle, Play, HelpCircle } from 'lucide
 import { motion, AnimatePresence } from 'motion/react';
 
 function GameAppInner() {
-  const { players, currentPlayerId, activeMarketEvent } = useGame();
+  const { players, currentPlayerId, activeMarketEvent, activities } = useGame();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
 
   // Lockout system: verify pin exists
@@ -65,7 +65,7 @@ function GameAppInner() {
         <div className="relative flex-1 overflow-hidden h-4">
           <div className="absolute flex space-x-8 animate-marquee whitespace-nowrap">
             <span>● CAY: ${players.cay?.netWorth.toLocaleString()}</span>
-            <span>● BROOKE: ${players.brooke?.netWorth.toLocaleString()}</span>
+            <span>● BROOK: ${players.brook?.netWorth.toLocaleString()}</span>
             <span>● DR. LEROY: ${players.dr_leroy?.netWorth.toLocaleString()}</span>
             <span>● SOL: ${players.sol?.netWorth.toLocaleString()}</span>
             <span>● YONNY: ${players.yonny?.netWorth.toLocaleString()}</span>
@@ -94,7 +94,7 @@ function GameAppInner() {
           >
             <span className="flex items-center space-x-1.5">
               <AlertTriangle className="w-3.5 h-3.5" />
-              <span>ALERT: {activeMarketEvent.title} IS ACTIVE. {activeMarketEvent.desc}</span>
+              <span>ALERT: {activeMarketEvent.title} IS ACTIVE. {activeMarketEvent.message}</span>
             </span>
             <span className="text-[9px] uppercase tracking-widest bg-zinc-950 text-yellow-500 py-0.5 px-2 rounded-full font-sans font-extrabold shadow-sm">
               ALERT SYSTEM ACTIVE
@@ -130,7 +130,7 @@ function GameAppInner() {
         <div className="flex items-center space-x-2">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="font-mono uppercase tracking-wider text-[10px] text-zinc-400">
-            Boardroom secure. No recent conflicts.
+            {activities.length > 0 ? activities[activities.length - 1] : 'Boardroom secure. No recent conflicts.'}
           </span>
         </div>
 

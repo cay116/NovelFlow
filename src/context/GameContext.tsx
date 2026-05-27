@@ -68,9 +68,9 @@ const initialPlayers: Record<string, Player> = {
     streak: 3,
     lastLoginDate: null,
   },
-  brooke: {
-    id: 'brooke',
-    name: 'Brooke',
+  brook: {
+    id: 'brook',
+    name: 'Brook',
     avatar: '💎',
     status: 'online',
     netWorth: 10000000,
@@ -162,7 +162,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Load initial settings
   const [players, setPlayers] = useState<Record<string, Player>>(() => {
     const saved = localStorage.getItem('capital_kings_players');
-    return saved ? JSON.parse(saved) : initialPlayers;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        let modified = false;
+        Object.keys(parsed).forEach((id) => {
+          if (parsed[id].balance !== 10000000 || parsed[id].netWorth !== 10000000 || Object.keys(parsed[id].portfolio).length > 0) {
+            parsed[id].balance = 10000000;
+            parsed[id].netWorth = 10000000;
+            parsed[id].portfolio = {};
+            parsed[id].unlockedProperties = [];
+            modified = true;
+          }
+        });
+        if (modified) {
+          localStorage.setItem('capital_kings_players', JSON.stringify(parsed));
+        }
+        return parsed;
+      } catch (e) {
+        return initialPlayers;
+      }
+    }
+    return initialPlayers;
   });
 
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(() => {
@@ -189,7 +210,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [properties, setProperties] = useState<Property[]>(() => {
     const saved = localStorage.getItem('capital_kings_properties');
-    return saved ? JSON.parse(saved) : initialProperties;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        let modified = false;
+        parsed.forEach((p: any) => {
+          if (p.ownerId !== null) {
+            p.ownerId = null;
+            p.upgradeLevel = 0;
+            p.currentValue = p.basePrice;
+            p.ownershipHistory = [];
+            modified = true;
+          }
+        });
+        if (modified) {
+          localStorage.setItem('capital_kings_properties', JSON.stringify(parsed));
+        }
+        return parsed;
+      } catch (e) {
+        return initialProperties;
+      }
+    }
+    return initialProperties;
   });
 
   const [stocks, setStocks] = useState<Stock[]>(() => {
@@ -1602,7 +1644,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 4. RANDOM AUTOMATED BOT MOVES & CHATS
       // Select a random bot that isn't the current user
-      const botPool = ['cay', 'brooke', 'leroy', 'sol', 'yonny'].filter((id) => id !== currentPlayerId);
+      const botPool = ['cay', 'brook', 'leroy', 'sol', 'yonny'].filter((id) => id !== currentPlayerId);
       const randomBotId = botPool[Math.floor(Math.random() * botPool.length)];
 
       if (randomBotId) {
@@ -1613,111 +1655,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (dice < 0.35) {
           const subDice = Math.random();
 
-          if (subDice < 0.25) {
-            // Action A: Trade Stock
-            const randStock = stocks[Math.floor(Math.random() * stocks.length)];
-            const canTradeAmt = Math.floor(Math.random() * 500) + 10;
-            const actionCost = Math.round(randStock.price * canTradeAmt);
-
-            if (bot.balance > actionCost + 1000000) {
-              // Buy stock
-              setPlayers((prev) => {
-                const next = { ...prev };
-                const currentShares = next[randomBotId].portfolio[randStock.symbol]?.shares || 0;
-                next[randomBotId].balance = Math.round(next[randomBotId].balance - actionCost);
-                next[randomBotId].portfolio[randStock.symbol] = {
-                  shares: currentShares + canTradeAmt,
-                  avgBuyPrice: randStock.price,
-                };
-                return next;
-              });
-
-              // Write bot notification
-              addNotification(
-                randomBotId,
-                'Order Cleared',
-                `Acquired ${canTradeAmt} shares of ${randStock.symbol}`,
-                'stock'
-              );
-
-              // Chat
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: `bot_msg_${Date.now()}`,
-                  senderId: randomBotId,
-                  senderName: bot.name,
-                  senderAvatar: bot.avatar,
-                  receiverId: 'global',
-                  text: `Just snagged ${canTradeAmt} shares of ${randStock.symbol}! Solid entry price. 💰📈`,
-                  timestamp: new Date().toISOString(),
-                },
-              ]);
-            }
-          } else if (subDice < 0.5) {
-            // Action B: Buy or Upgrade Property
-            const unownedProps = properties.filter((p) => !p.ownerId);
-            if (unownedProps.length > 0 && bot.balance > 3000000) {
-              const bought = unownedProps[0];
-              // Buy it
-              setPlayers((prev) => {
-                const next = { ...prev };
-                next[randomBotId].balance = Math.round(next[randomBotId].balance - bought.basePrice);
-                return next;
-              });
-
-              setProperties((prev) =>
-                prev.map((p) =>
-                  p.id === bought.id
-                    ? {
-                        ...p,
-                        ownerId: randomBotId,
-                        ownershipHistory: [{ playerId: randomBotId, playerName: bot.name, price: bought.basePrice, timestamp: new Date().toISOString() }],
-                      }
-                    : p
-                )
-              );
-
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: `bot_msg_${Date.now()}`,
-                  senderId: randomBotId,
-                  senderName: bot.name,
-                  senderAvatar: bot.avatar,
-                  receiverId: 'global',
-                  text: `Realty Syndicate is talking! Grabbed the ${bought.name} for passive yield! 🏰🏰`,
-                  timestamp: new Date().toISOString(),
-                },
-              ]);
-            } else {
-              // Upgrade existing
-              const ownedProps = properties.filter((p) => p.ownerId === randomBotId && p.upgradeLevel < 3);
-              if (ownedProps.length > 0 && bot.balance > 2000000) {
-                const upg = ownedProps[0];
-                const premiumCast = Math.round(upg.basePrice * 0.45);
-
-                setPlayers((prev) => {
-                  const next = { ...prev };
-                  next[randomBotId].balance = Math.round(next[randomBotId].balance - premiumCast);
-                  return next;
-                });
-
-                setProperties((prev) =>
-                  prev.map((p) =>
-                    p.id === upg.id
-                      ? {
-                          ...p,
-                          upgradeLevel: upg.upgradeLevel + 1,
-                          currentValue: Math.round(p.currentValue + premiumCast),
-                          passiveIncome: Math.round(p.passiveIncome * 1.6),
-                        }
-                      : p
-                  )
-                );
-              }
-            }
-          } else if (subDice < 0.75) {
+          if (subDice < 0.50) {
             // Action C: Send challenge to active user (if logged in!)
             if (currentPlayerId) {
               const targetUser = players[currentPlayerId];

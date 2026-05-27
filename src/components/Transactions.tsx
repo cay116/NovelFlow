@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export default function Transactions() {
   const { players, currentPlayerId, transactions, sendMoney, requestMoney, addNotification } = useGame();
-  const [recipientId, setRecipientId] = useState<string>('brooke');
+  const [recipientId, setRecipientId] = useState<string>('brook');
   const [amount, setAmount] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [txType, setTxType] = useState<'send' | 'request'>('send');

@@ -37,6 +37,8 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
 
   const unreadNotifs = notifications.filter((n) => n.playerId === currentPlayerId && !n.read);
 
+  const isAdmin = currentPlayerId === 'cay' || currentPlayerId === 'brook';
+
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Activity },
     { id: 'ledger', label: 'Ledger', icon: History },
@@ -45,7 +47,7 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
     { id: 'casino', label: 'Gold Casino', icon: Gamepad },
     { id: 'challenges', label: 'PvP Duels', icon: Award },
     { id: 'social', label: 'Global Chat', icon: MessageSquare },
-    { id: 'admin', label: 'Admin Control', icon: Shield },
+    ...(isAdmin ? [{ id: 'admin', label: 'Admin Control', icon: Shield }] : []),
   ];
 
   return (
