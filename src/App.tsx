@@ -181,8 +181,14 @@ function MainAppShell() {
     writingStreak,
     totalWords,
     userProfile,
-    importWorkspaceData
+    importWorkspaceData,
+    logInAsDrLeul
   } = useApp();
+
+  // Netflix-style Profile Login States
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginFeedback, setLoginFeedback] = useState('');
+  const [isForceOffline, setIsForceOffline] = useState(false);
 
   // Navigation management states
   const [currentView, setView] = useState('dashboard');
@@ -238,7 +244,13 @@ function MainAppShell() {
         setAuthFeedback('Password reset link successfully generated. Check email.');
       }
     } catch (err: any) {
-      setAuthFeedback(err.message || 'Operation failed. Verify parameters.');
+      console.error("Sign-in operation failed:", err);
+      // Catch unauthorized domain error or default messages
+      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
+        setAuthFeedback('auth/unauthorized-domain');
+      } else {
+        setAuthFeedback(err.message || 'Operation failed. Verify parameters.');
+      }
     }
   };
 
@@ -313,124 +325,130 @@ function MainAppShell() {
         <p className="font-mono text-xs text-slate-500 tracking-widest uppercase">Initializing StoryBlocks...</p>
       </div>
     );
-  }
-
-  // Render Authentication overlay if session does not exist
+  }  // Render Authentication overlay if session does not exist
   if (!currentUser) {
     return (
-      <div className="min-h-screen w-screen bg-slate-950 flex items-center justify-center p-4 selection:bg-amber-500/35 relative overflow-hidden">
-        {/* Abstract backlights */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-amber-500/5 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-sky-500/5 blur-[120px] pointer-events-none" />
+      <div className="min-h-screen w-screen bg-[#141414] flex flex-col justify-between p-6 md:p-10 selection:bg-red-600/35 relative overflow-hidden font-sans">
+        {/* Subtle Netflix-Red Ambient Radial Glow */}
+        <div className="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-red-600/[0.04] blur-[140px] pointer-events-none" />
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-md p-8 md:p-10 rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-slate-900/80 shadow-2xl flex flex-col gap-6"
-        >
-          {/* Brand header */}
-          <div className="flex flex-col items-center gap-2.5">
-            <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center shadow-lg shadow-amber-500/10 mb-1">
-              <span className="font-serif font-black text-slate-950 text-2xl">S</span>
-            </div>
-            <h1 className="text-xl font-black text-white tracking-widest uppercase">StoryBlocks Workspace</h1>
-            <p className="text-xs text-slate-500">The premier SaaS suite for outline writing and novelists</p>
+        {/* 1. Header with stark minimalist Brand */}
+        <header className="flex items-center justify-between w-full max-w-5xl mx-auto z-10">
+          <div className="flex items-center gap-2">
+            <span className="font-sans font-black text-2xl md:text-3xl tracking-tighter text-[#E50914] select-none">
+              STORYBLOCKS
+            </span>
+            <span className="text-[9px] font-mono font-bold tracking-widest text-slate-500 uppercase px-1.5 py-0.5 border border-slate-800 rounded bg-slate-900/40">
+              Studio
+            </span>
           </div>
 
-          <form onSubmit={handleSignOperation} className="flex flex-col gap-4">
-            {authMode === 'signup' && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono font-bold text-slate-500 uppercase">Author Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-2.5 h-4.5 w-4.5 text-slate-600" />
-                  <input
-                    type="text"
-                    required
-                    value={authName}
-                    onChange={(e) => setAuthName(e.target.value)}
-                    placeholder="e.g. Mary Shelley"
-                    className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500 transition-all placeholder:text-slate-700"
-                  />
-                </div>
-              </div>
-            )}
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
+            <span className={`h-2 w-2 rounded-full ${isFirebaseActive ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-amber-500 shadow-amber-500/20'} animate-pulse`} />
+            <span className="uppercase text-[9px] tracking-wider">
+              {isFirebaseActive ? 'Cloud Online' : 'Local Archive'}
+            </span>
+          </div>
+        </header>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-mono font-bold text-slate-500 uppercase">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-2.5 h-4.5 w-4.5 text-slate-600" />
-                <input
-                  type="email"
-                  required
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  placeholder="name@storyblocks.org"
-                  className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500 transition-all placeholder:text-slate-700"
-                />
-              </div>
-            </div>
+        {/* 2. Main Center Profile Selector */}
+        <main className="flex-1 flex flex-col items-center justify-center py-10 z-10">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+            className="text-center space-y-8"
+          >
+            <h1 className="text-3xl md:text-5xl font-sans font-medium tracking-tight text-white mb-2 select-none">
+              Who's writing?
+            </h1>
 
-            {authMode !== 'forgot' && (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-mono font-bold text-slate-500 uppercase">Security Password</label>
-                <div className="relative">
-                  <Key className="absolute left-3 top-2.5 h-4.5 w-4.5 text-slate-600" />
-                  <input
-                    type="password"
-                    required
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500 transition-all placeholder:text-slate-700"
-                  />
-                </div>
-              </div>
-            )}
-
-            {authFeedback && (
-              <p className="text-xs font-mono font-bold text-red-400 bg-red-500/5 p-2.5 border border-red-500/10 rounded-lg text-center mt-1">
-                {authFeedback}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full mt-2 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 rounded-lg font-black text-sm tracking-wide shadow-md shadow-amber-500/5 hover:scale-[1.01] transition-all duration-300 cursor-pointer"
-            >
-              {authMode === 'login' ? 'Author Login' : authMode === 'signup' ? 'Create Free Workspace' : 'Reset Workspace Link'}
-            </button>
-          </form>
-
-          {/* Social OAuth Google Signin */}
-          {authMode !== 'forgot' && (
-            <div className="flex flex-col gap-3 pt-2">
-              <div className="relative flex items-center justify-center">
-                <div className="absolute inset-0 border-t border-slate-900" />
-                <span className="relative px-3.5 bg-slate-900/10 backdrop-blur-3xl text-[10px] font-mono uppercase text-slate-600 font-bold select-none">Or Access via Cloud</span>
-              </div>
-
-              <button
-                onClick={logInWithGoogle}
-                className="w-full py-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-lg text-xs font-bold font-mono transition-colors duration-200 flex items-center justify-center gap-2"
+            <div className="flex flex-col items-center gap-6">
+              <motion.div
+                onClick={async () => {
+                  if (isLoggingIn) return;
+                  setIsLoggingIn(true);
+                  setLoginFeedback('');
+                  try {
+                    // Trigger the customized bulletproof login for Dr. Leul
+                    await logInAsDrLeul(isForceOffline);
+                  } catch (err: any) {
+                    console.error("Login trigger failed:", err);
+                    setLoginFeedback(err.message || 'Verification deferred. Opening local sandbox workspace.');
+                    // Force complete fallback bypass to make sure they are never locked out
+                    await logInAsDrLeul(true);
+                  } finally {
+                    setIsLoggingIn(false);
+                  }
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
+                className="group flex flex-col items-center gap-4 cursor-pointer focus:outline-none"
               >
-                <span>🚀 Authenticate Google Account</span>
-              </button>
-            </div>
-          )}
+                {/* Netflix Avatar Icon Custom Render */}
+                <div className="relative w-32 h-32 md:w-36 md:h-36 rounded-lg overflow-hidden border-3 border-transparent group-hover:border-white transition-all duration-300 shadow-2xl bg-gradient-to-br from-[#E50914] via-[#b20710] to-rose-950 flex items-center justify-center">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white font-serif font-black select-none text-4xl tracking-tighter">
+                    DL
+                    <div className="absolute inset-0 bg-black/15 group-hover:bg-transparent transition-colors duration-300" />
+                  </div>
 
-          {/* View switching anchors */}
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mt-2 selection:bg-transparent">
-            {authMode === 'login' ? (
-              <>
-                <button onClick={() => { setAuthFeedback(''); setAuthMode('signup'); }} className="hover:text-amber-500 transition-colors">Workspace Outliner Registration</button>
-                <button onClick={() => { setAuthFeedback(''); setAuthMode('forgot'); }} className="hover:text-amber-500 transition-colors">Pass Recovery</button>
-              </>
-            ) : (
-              <button onClick={() => { setAuthFeedback(''); setAuthMode('login'); }} className="hover:text-amber-500 transition-colors mx-auto block">Already initialized? Sign In Session</button>
-            )}
-          </div>
-        </motion.div>
+                  {/* Smiling Face overlay resembling the Netflix smiley logo */}
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center opacity-85 group-hover:opacity-100 transition-opacity">
+                    <div className="w-8.5 h-1.5 bg-white rounded-full mt-1.5" />
+                  </div>
+
+                  {/* Loading Spinner */}
+                  {isLoggingIn && (
+                    <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center gap-1.5 z-20">
+                      <div className="w-8 h-8 border-3 border-[#E50914] border-t-transparent rounded-full animate-spin" />
+                      <span className="text-[9px] font-mono text-[#E50914] font-black uppercase tracking-widest">
+                        Syncing...
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Profile Title Text */}
+                <p className="text-slate-400 group-hover:text-white font-sans text-base md:text-lg tracking-wide transition-colors duration-200">
+                  Dr. Leul
+                </p>
+              </motion.div>
+
+              {/* Login Error Prompt */}
+              {loginFeedback && (
+                <div className="max-w-xs p-3 rounded-lg bg-red-950/20 border border-red-900/30 text-center animate-pulse mt-2">
+                  <p className="text-xs font-mono font-medium text-red-400">
+                    {loginFeedback}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Offline Local Storage Checkbox and Details */}
+            <div className="flex flex-col items-center gap-4 pt-4">
+              <label className="flex items-center gap-2 text-xs text-slate-500 cursor-pointer select-none hover:text-slate-400 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={isForceOffline}
+                  onChange={(e) => setIsForceOffline(e.target.checked)}
+                  className="rounded bg-black border-slate-700 text-[#E50914] focus:ring-[#E50914] h-3.5 w-3.5"
+                />
+                <span>Force Bulletproof Local Persistence (Offline Bypass)</span>
+              </label>
+
+              <p className="text-[10px] text-slate-600 font-mono tracking-wide max-w-xs mx-auto leading-relaxed">
+                StoryBlocks stores all manuscripts, chapter weights, outline statistics, and trophies securely. Reusable and saved automatically.
+              </p>
+            </div>
+          </motion.div>
+        </main>
+
+        {/* 3. Footer */}
+        <footer className="w-full text-center max-w-5xl mx-auto border-t border-slate-900/60 pt-4 z-10">
+          <p className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">
+            © 2026 StoryBlocks Workspace • Author Vault for Dr. Leul
+          </p>
+        </footer>
       </div>
     );
   }

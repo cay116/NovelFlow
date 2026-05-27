@@ -24,6 +24,10 @@ if (isFirebaseConfigured) {
     
     // Validate connection to Firestore as required by SKILL.md
     const testConnection = async () => {
+      // Print friendly debug message for Domain Whitelisting in Firebase Auth
+      if (typeof window !== 'undefined') {
+        console.log(`[Firebase Debug] If you see 'auth/unauthorized-domain', make sure you have added this hostname to your Firebase Auth settings: ${window.location.hostname}`);
+      }
       try {
         await getDocFromServer(doc(db, 'test', 'connection'));
       } catch (error) {

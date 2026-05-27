@@ -42,6 +42,7 @@ interface AppContextProps {
   signUp: (email: string, pass: string, name: string) => Promise<void>;
   logIn: (email: string, pass: string) => Promise<void>;
   logInWithGoogle: () => Promise<void>;
+  logInAsDrLeul: (useOfflineBypass?: boolean) => Promise<void>;
   logOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   // Book CRUD
@@ -376,6 +377,87 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const email = 'calebdani71@gmail.com';
       const name = 'Caleb Dani';
       await signUp(email, 'google-simulated', name);
+    }
+  };
+
+  const logInAsDrLeul = async (useOfflineBypass = false) => {
+    setLoading(true);
+    const email = 'dr.leul@storyblocks.org';
+    const password = 'drleulactive';
+    const name = 'Dr. Leul';
+    const uid = 'dr_leul_author_workspace';
+
+    if (isFirebaseActive && !useOfflineBypass) {
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        addActivityLog('Auth', `Welcome back, Dr. Leul (Cloud Session Activated)`);
+      } catch (err: any) {
+        console.error("Cloud login failed for Dr. Leul, trying to register...", err);
+        // If user doesn't exist yet, sign them up
+        if (err.code === 'auth/user-not-found' || err.message?.includes('user-not-found') || err.code === 'auth/invalid-credential' || err.message?.includes('invalid-credential')) {
+          try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            // Create profile
+            const newProfile: UserProfile = {
+              id: auth.currentUser?.uid || uid,
+              displayName: name,
+              email: email,
+              writingStreak: 0,
+              lastWriteDate: '',
+              badges: [],
+              dailyLogs: {}
+            };
+            await setDoc(doc(db, 'users', newProfile.id), newProfile);
+            setUserProfile(newProfile);
+            addActivityLog('Auth', `Welcome, Dr. Leul (Cloud Workspace Provisioned)`);
+          } catch (regErr: any) {
+            console.error("Failed to register Dr. Leul on cloud, activating local workspace fallback", regErr);
+            activateLocalDrLeul();
+          }
+        } else {
+          // Trigger local fallback for authorized domain error or other blockers
+          console.warn("Domain mismatch or cloud mismatch. Activating secure Local Storage Sandbox for Dr. Leul.");
+          activateLocalDrLeul();
+        }
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      activateLocalDrLeul();
+    }
+
+    function activateLocalDrLeul() {
+      const fakeUser = { uid, email, displayName: name };
+      localStorage.setItem('storyblocks_current_user', JSON.stringify(fakeUser));
+      
+      const storedProfile = localStorage.getItem(`storyblocks_profile_${uid}`);
+      if (storedProfile) {
+        setUserProfile(JSON.parse(storedProfile));
+      } else {
+        const defaultProf: UserProfile = {
+          id: uid,
+          displayName: name,
+          email: email,
+          writingStreak: 0,
+          lastWriteDate: '',
+          badges: [],
+          dailyLogs: {}
+        };
+        localStorage.setItem(`storyblocks_profile_${uid}`, JSON.stringify(defaultProf));
+        setUserProfile(defaultProf);
+      }
+
+      // Load Books & Chapters under Dr. Leul's UID
+      const storedBooks = localStorage.getItem(`storyblocks_books_${uid}`);
+      setBooks(storedBooks ? JSON.parse(storedBooks) : []);
+
+      const storedChapters = localStorage.getItem(`storyblocks_chapters_${uid}`);
+      setChapters(storedChapters ? JSON.parse(storedChapters) : []);
+
+      setCurrentUser(fakeUser);
+      setSyncStatus('offline');
+      addActivityLog('Auth', `Welcome back Dr. Leul (Offline Vault Activated)`);
+      setLoading(false);
     }
   };
 
@@ -874,6 +956,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       signUp,
       logIn,
       logInWithGoogle,
+      logInAsDrLeul,
       logOut,
       resetPassword,
       // Book
