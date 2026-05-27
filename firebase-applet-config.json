@@ -1,21 +1,10 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCwCLMarz38NJd1ZZgpCGZ4CHeEDZgVFyM",
-  authDomain: "novelflow-73d1b.firebaseapp.com",
-  projectId: "novelflow-73d1b",
-  storageBucket: "novelflow-73d1b.firebasestorage.app",
-  messagingSenderId: "1014027586810",
-  appId: "1:1014027586810:web:540a7967bbdcaa09cecd43",
-  measurementId: "G-DEXZ78TJWE"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+{
+  "projectId": "lunar-polygon-l07pf",
+  "appId": "1:298879771512:web:c72938c89bf3fd2ff61e8d",
+  "apiKey": "AIzaSyA_HoIiAdd2cck8y2WPig7CzimWKnoLXUg",
+  "authDomain": "lunar-polygon-l07pf.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-b7388b4d-3ec0-44cc-9f07-edbcb4268b6a",
+  "storageBucket": "lunar-polygon-l07pf.firebasestorage.app",
+  "messagingSenderId": "298879771512",
+  "measurementId": ""
+}

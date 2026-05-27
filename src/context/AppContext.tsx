@@ -101,10 +101,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Initial user loads
   useEffect(() => {
+    // Local Storage Sandboxed Engine Helper
+    const loadLocalStorageData = () => {
+      const localUser = localStorage.getItem('storyblocks_current_user');
+      if (localUser) {
+        const userObj = JSON.parse(localUser);
+        setCurrentUser(userObj);
+        
+        const storedProfile = localStorage.getItem(`storyblocks_profile_${userObj.uid}`);
+        if (storedProfile) {
+          setUserProfile(JSON.parse(storedProfile));
+        } else {
+          const defaultProf: UserProfile = {
+            id: userObj.uid,
+            displayName: userObj.displayName || 'Dr. Leul',
+            email: userObj.email || 'dr.leul@storyblocks.org',
+            writingStreak: 0,
+            lastWriteDate: '',
+            badges: [],
+            dailyLogs: {}
+          };
+          localStorage.setItem(`storyblocks_profile_${userObj.uid}`, JSON.stringify(defaultProf));
+          setUserProfile(defaultProf);
+        }
+
+        // Load Books & Chapters
+        const storedBooks = localStorage.getItem(`storyblocks_books_${userObj.uid}`);
+        setBooks(storedBooks ? JSON.parse(storedBooks) : []);
+
+        const storedChapters = localStorage.getItem(`storyblocks_chapters_${userObj.uid}`);
+        setChapters(storedChapters ? JSON.parse(storedChapters) : []);
+        setSyncStatus('offline');
+        setLoading(false);
+      } else {
+        setCurrentUser(null);
+        setUserProfile(null);
+        setBooks([]);
+        setChapters([]);
+        setSyncStatus('offline');
+        setLoading(false);
+      }
+    };
+
     if (isFirebaseActive) {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        setCurrentUser(user);
         if (user) {
+          setCurrentUser(user);
           setSyncStatus('synced');
           // Subscribe to User Profile in Firestore
           const profileRef = doc(db, 'users', user.uid);
@@ -115,7 +157,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               // Create default profile
               const newProfile: UserProfile = {
                 id: user.uid,
-                displayName: user.displayName || 'Author',
+                displayName: user.displayName || 'Dr. Leul',
                 email: user.email || '',
                 writingStreak: 0,
                 lastWriteDate: '',
@@ -157,54 +199,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             unsubChapters();
           };
         } else {
+          // Firebase reports NO active user session. Let's see if Dr. Leul offline sandbox is active.
+          const localUser = localStorage.getItem('storyblocks_current_user');
+          if (localUser) {
+            const userObj = JSON.parse(localUser);
+            if (userObj.uid === 'dr_leul_author_workspace') {
+              loadLocalStorageData();
+              return;
+            }
+          }
+
           setUserProfile(null);
           setBooks([]);
           setChapters([]);
+          setCurrentUser(null);
           setLoading(false);
         }
       });
       return unsubscribe;
     } else {
-      // Local Storage Sandboxed Engine
-      const loadLocalStorageData = () => {
-        const localUser = localStorage.getItem('storyblocks_current_user');
-        if (localUser) {
-          const userObj = JSON.parse(localUser);
-          setCurrentUser(userObj);
-          
-          const storedProfile = localStorage.getItem(`storyblocks_profile_${userObj.uid}`);
-          if (storedProfile) {
-            setUserProfile(JSON.parse(storedProfile));
-          } else {
-            const defaultProf: UserProfile = {
-              id: userObj.uid,
-              displayName: userObj.displayName || 'Novel Writer',
-              email: userObj.email || 'writer@storyblocks.local',
-              writingStreak: 0,
-              lastWriteDate: '',
-              badges: [],
-              dailyLogs: {}
-            };
-            localStorage.setItem(`storyblocks_profile_${userObj.uid}`, JSON.stringify(defaultProf));
-            setUserProfile(defaultProf);
-          }
-
-          // Load Books & Chapters
-          const storedBooks = localStorage.getItem(`storyblocks_books_${userObj.uid}`);
-          setBooks(storedBooks ? JSON.parse(storedBooks) : []);
-
-          const storedChapters = localStorage.getItem(`storyblocks_chapters_${userObj.uid}`);
-          setChapters(storedChapters ? JSON.parse(storedChapters) : []);
-        } else {
-          setCurrentUser(null);
-          setUserProfile(null);
-          setBooks([]);
-          setChapters([]);
-        }
-        setSyncStatus('offline');
-        setLoading(false);
-      };
-      
       loadLocalStorageData();
       
       // Listen to storage sync events
@@ -393,13 +406,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addActivityLog('Auth', `Welcome back, Dr. Leul (Cloud Session Activated)`);
       } catch (err: any) {
         console.error("Cloud login failed for Dr. Leul, trying to register...", err);
-        if (err.code === 'auth/operation-not-allowed' || err.message?.includes('operation-not-allowed')) {
-          console.error(
-            "[Firebase Config Error] Email/Password Sign-In Provider is not enabled in your Firebase Console.\n" +
-            "Please enable it under: Build -> Authentication -> Sign-in method -> Email/Password."
-          );
-          activateLocalDrLeul();
-        } else if (err.code === 'auth/user-not-found' || err.message?.includes('user-not-found') || err.code === 'auth/invalid-credential' || err.message?.includes('invalid-credential')) {
+        // If user doesn't exist yet, sign them up
+        if (err.code === 'auth/user-not-found' || err.message?.includes('user-not-found') || err.code === 'auth/invalid-credential' || err.message?.includes('invalid-credential')) {
           try {
             await createUserWithEmailAndPassword(auth, email, password);
             // Create profile
@@ -417,12 +425,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             addActivityLog('Auth', `Welcome, Dr. Leul (Cloud Workspace Provisioned)`);
           } catch (regErr: any) {
             console.error("Failed to register Dr. Leul on cloud, activating local workspace fallback", regErr);
-            if (regErr.code === 'auth/operation-not-allowed' || regErr.message?.includes('operation-not-allowed')) {
-              console.error(
-                "[Firebase Config Error] Email/Password Sign-In Provider is not enabled in your Firebase Console.\n" +
-                "Please enable it under: Build -> Authentication -> Sign-in method -> Email/Password."
-              );
-            }
             activateLocalDrLeul();
           }
         } else {
@@ -474,15 +476,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logOut = async () => {
     setLoading(true);
+    localStorage.removeItem('storyblocks_current_user');
     if (isFirebaseActive) {
-      await signOut(auth);
-    } else {
-      localStorage.removeItem('storyblocks_current_user');
-      setCurrentUser(null);
-      setUserProfile(null);
-      setBooks([]);
-      setChapters([]);
+      try {
+        await signOut(auth);
+      } catch (err) {
+        console.error("Firebase logout error:", err);
+      }
     }
+    setCurrentUser(null);
+    setUserProfile(null);
+    setBooks([]);
+    setChapters([]);
     setLoading(false);
   };
 
