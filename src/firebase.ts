@@ -57,8 +57,18 @@ if (isFirebaseConfigured) {
       try {
         await getDocFromServer(doc(db, 'test', 'connection'));
       } catch (error) {
-        if (error instanceof Error && error.message.includes('the client is offline')) {
-          console.warn("Please check your Firebase configuration: Client is offline.");
+        if (error instanceof Error) {
+          if (error.message.includes('the client is offline')) {
+            console.warn("Please check your Firebase configuration: Client is offline.");
+          } else if (
+            error.message.includes('Database') && 
+            (error.message.includes('not found') || error.message.includes('default'))
+          ) {
+            console.error(
+              "[Firebase Config Error] The Firestore database '(default)' was not found.\n" +
+              "Please make sure you have initialized the Firestore Database in your Firebase Console (Build -> Firestore Database -> Create database)."
+            );
+          }
         }
       }
     };

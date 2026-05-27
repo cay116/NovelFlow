@@ -393,8 +393,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addActivityLog('Auth', `Welcome back, Dr. Leul (Cloud Session Activated)`);
       } catch (err: any) {
         console.error("Cloud login failed for Dr. Leul, trying to register...", err);
-        // If user doesn't exist yet, sign them up
-        if (err.code === 'auth/user-not-found' || err.message?.includes('user-not-found') || err.code === 'auth/invalid-credential' || err.message?.includes('invalid-credential')) {
+        if (err.code === 'auth/operation-not-allowed' || err.message?.includes('operation-not-allowed')) {
+          console.error(
+            "[Firebase Config Error] Email/Password Sign-In Provider is not enabled in your Firebase Console.\n" +
+            "Please enable it under: Build -> Authentication -> Sign-in method -> Email/Password."
+          );
+          activateLocalDrLeul();
+        } else if (err.code === 'auth/user-not-found' || err.message?.includes('user-not-found') || err.code === 'auth/invalid-credential' || err.message?.includes('invalid-credential')) {
           try {
             await createUserWithEmailAndPassword(auth, email, password);
             // Create profile
@@ -412,6 +417,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             addActivityLog('Auth', `Welcome, Dr. Leul (Cloud Workspace Provisioned)`);
           } catch (regErr: any) {
             console.error("Failed to register Dr. Leul on cloud, activating local workspace fallback", regErr);
+            if (regErr.code === 'auth/operation-not-allowed' || regErr.message?.includes('operation-not-allowed')) {
+              console.error(
+                "[Firebase Config Error] Email/Password Sign-In Provider is not enabled in your Firebase Console.\n" +
+                "Please enable it under: Build -> Authentication -> Sign-in method -> Email/Password."
+              );
+            }
             activateLocalDrLeul();
           }
         } else {
