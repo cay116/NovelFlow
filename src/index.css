@@ -6,27 +6,27 @@
   --font-serif: 'Playfair Display', Georgia, serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Elegant Dark UI color mappings */
-  --color-slate-950: #0F1115;
-  --color-slate-900: #16181F;
-  --color-slate-800: #1C1F26;
-  --color-slate-700: #2c313d;
-  --color-slate-600: #4a5264;
-  --color-slate-500: #64748b;
+  /* Premium Cinematic Dark UI color mappings (Netflix aesthetic) */
+  --color-slate-950: #141414;
+  --color-slate-900: #1c1c1c;
+  --color-slate-800: #262626;
+  --color-slate-700: #333333;
+  --color-slate-600: #4d4d4d;
+  --color-slate-500: #808080;
 
-  /* Map Amber and Orange branding keywords to Elegant Dark Indigo accents */
-  --color-amber-500: #6366f1;
-  --color-amber-600: #4f46e5;
-  --color-amber-400: #818cf8;
-  --color-amber-300: #a5b4fc;
-  --color-amber-200: #c7d2fe;
-  --color-amber-100: #e0e7ff;
-  --color-amber-50: #f5f3ff;
-  --color-amber-950: #1e1b4b;
+  /* Map Amber and Orange branding keywords to Brilliant Netflix Red accents */
+  --color-amber-500: #E50914;
+  --color-amber-600: #B20710;
+  --color-amber-400: #F3121E;
+  --color-amber-300: #FF3C46;
+  --color-amber-200: #FF6E75;
+  --color-amber-100: #FFA1A5;
+  --color-amber-50: #FFF5F5;
+  --color-amber-950: #400205;
 
-  --color-orange-500: #6366f1;
-  --color-orange-600: #4f46e5;
-  --color-orange-400: #818cf8;
+  --color-orange-500: #E50914;
+  --color-orange-600: #B20710;
+  --color-orange-400: #F3121E;
 }
 
 /* Custom scrollbar matching dark slate design details */
@@ -45,7 +45,7 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6366f1; /* Elegant Dark accent */
+  background: #E50914; /* Elegant Dark accent */
 }
 
 /* Fade animations */

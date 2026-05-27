@@ -124,8 +124,8 @@ export const StatsCharts: React.FC = () => {
             {/* Gradients def */}
             <defs>
               <linearGradient id="progressGlowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#6366f1" />
-                <stop offset="100%" stopColor="#818cf8" />
+                <stop offset="0%" stopColor="#E50914" />
+                <stop offset="100%" stopColor="#ff5a64" />
               </linearGradient>
             </defs>
           </svg>

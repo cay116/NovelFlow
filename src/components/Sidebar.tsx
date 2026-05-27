@@ -50,20 +50,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }[syncStatus];
 
   const navContent = (
-    <div className="flex flex-col h-full bg-[#0A0C10] text-slate-100 border-r border-white/5">
+    <div className="flex flex-col h-full bg-[#0E0E0E] text-slate-100 border-r border-white/5">
       {/* Brand Header */}
-      <div className="flex items-center gap-3 px-6 py-6 border-b border-white/5">
-        <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center shadow-lg shadow-amber-500/10">
-          <span className="font-serif font-black text-slate-950 text-xl text-center">S</span>
+      <div className="flex flex-col gap-1 px-6 py-5 border-b border-white/5 bg-[#0F0F0F]">
+        <div className="flex items-center gap-1.5">
+          <span className="font-sans font-black text-xl tracking-tighter text-[#E50914] select-none">
+            STORYBLOCKS
+          </span>
+          <span className="text-[8px] font-mono font-thin tracking-wider text-slate-400 uppercase px-1 py-0.2 border border-slate-800 rounded bg-slate-900/40">
+            Studio
+          </span>
         </div>
-        <div className="flex flex-col">
-          <span className="font-sans font-black tracking-tight text-lg text-white">StoryBlocks</span>
-          <span className="text-[10px] font-mono text-slate-500 tracking-widest uppercase">Novel Studio</span>
-        </div>
+        <p className="text-[9px] font-mono text-slate-500 tracking-wider uppercase font-bold">DR. LEUL'S WORKSPACE</p>
       </div>
 
       {/* Synchronizer Status pill */}
-      <div className="px-4 py-3 border-b border-white/5 bg-[#0A0C10]/50">
+      <div className="px-4 py-3 border-b border-white/5 bg-[#0E0E0E]/50">
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/5 text-xs font-medium ${syncInfo.color}`}>
           <syncInfo.icon className="h-4 w-4 shrink-0 animate-pulse" />
           <span className="truncate">{syncInfo.label}</span>
@@ -99,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Writing active Streak tracker mini-widget */}
       {currentUser && (
-        <div className="px-4 py-4 border-t border-white/5 bg-[#0A0C10]/35">
+        <div className="px-4 py-4 border-t border-white/5 bg-[#0E0E0E]/35">
           <div className="p-3 bg-[#16181F] rounded-xl border border-white/5 flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-indigo-500/10 flex items-center justify-center">
               <Flame className="h-5 w-5 text-indigo-500 animate-pulse" />
@@ -113,19 +115,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* Profile Footer */}
-      <div className="px-4 py-4 border-t border-white/5 mt-auto bg-[#0A0C10]">
+      <div className="px-4 py-4 border-t border-white/5 mt-auto bg-[#0B0B0B]">
         <div className="flex items-center gap-3 mb-3 px-2">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-slate-800 to-slate-950 flex items-center justify-center border border-white/10">
-            <span className="font-bold text-amber-500 text-sm">
-              {(userProfile?.displayName || 'A').charAt(0).toUpperCase()}
-            </span>
+          <div className="h-9 w-9 rounded bg-gradient-to-br from-[#E50914] via-[#b20710] to-rose-950 flex items-center justify-center border border-white/5 shadow-md relative overflow-hidden shrink-0">
+            <span className="font-sans font-black text-white text-xs select-none">DL</span>
+            <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-[2px] bg-white rounded-full opacity-80" />
           </div>
           <div className="flex-grow min-w-0">
-            <h4 className="text-xs font-semibold text-white truncate">
-              {userProfile?.displayName || 'Story Author'}
+            <h4 className="text-xs font-bold text-white truncate">
+              {userProfile?.displayName || 'Dr. Leul'}
             </h4>
-            <p className="text-[10px] text-slate-500 truncate">
-              {currentUser?.email || 'offline-workbench'}
+            <p className="text-[10px] text-slate-500 font-mono truncate">
+              {currentUser?.email || 'dr.leul@storyblocks.org'}
             </p>
           </div>
         </div>
@@ -166,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="relative flex flex-col w-64 max-w-xs h-full bg-[#0A0C10] shadow-2xl z-50"
+              className="relative flex flex-col w-64 max-w-xs h-full bg-[#0E0E0E] shadow-2xl z-50"
             >
               <button
                 onClick={toggleSidebar}
